@@ -27,6 +27,20 @@ if [ "$current_branch" = "master" ]; then
   git branch -m main
 fi
 
-# 4. Create GitHub repo and push
+# 4. Remove existing origin if present
+if git remote get-url origin &>/dev/null; then
+  echo "==> Removing existing origin remote ..."
+  git remote remove origin
+fi
+
+# 5. Create GitHub repo (continue if already exists)
 echo "==> Creating $visibility GitHub repo '$repo_name' ..."
-gh repo create "$repo_name" "--$visibility" --source=. --remote=origin --push
+gh repo create "$repo_name" "--$visibility" 2>/dev/null || true
+
+# 6. Set origin remote
+repo_url="https://github.com/$(gh api user --jq .login)/$repo_name.git"
+git remote add origin "$repo_url" 2>/dev/null || git remote set-url origin "$repo_url"
+
+# 7. Push
+echo "==> Pushing to origin/main ..."
+git push -u origin main
